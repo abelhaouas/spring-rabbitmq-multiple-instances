@@ -1,0 +1,60 @@
+version: '3'
+services:
+  rmq1:
+    image: rabbitmq:management
+    hostname: rmq1
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 'ck8FC0uJ9vePIhLr'
+      TCP_PORTS: "5672"
+      RABBITMQ_DEFAULT_USER: "admin"
+      RABBITMQ_DEFAULT_PASS: "admin"
+    ports:
+      - "1234:15672"
+    networks:
+      - rmq_1_proxy
+    volumes:
+      - 'rabbitmq_data1:/var/lib/rabbitmq'
+
+  rmq2:
+     image: rabbitmq:management
+     hostname: rmq2
+     environment:
+       RABBITMQ_ERLANG_COOKIE: 'ck8FC0uJ9vePIhLr'
+       TCP_PORTS: "5672"
+       RABBITMQ_DEFAULT_USER: "admin"
+       RABBITMQ_DEFAULT_PASS: "admin"
+     ports:
+       - "1235:15672"
+     networks:
+       - rmq_2_proxy
+     volumes:
+       - 'rabbitmq_data2:/var/lib/rabbitmq'
+  haproxy:
+    image: dockercloud/haproxy:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      MODE: tcp
+    expose:
+      - 5672
+    links:
+      - rmq1
+      - rmq2
+    ports:
+      - '5672:5672'
+    networks:
+      - default
+      - rmq_1_proxy
+      - rmq_2_proxy
+networks:
+  rmq_1_proxy:
+    external:
+      name: rmq_1_proxy
+  rmq_2_proxy:
+     external:
+       name: rmq_2_proxy
+volumes:
+  rabbitmq_data1:
+    driver: local
+  rabbitmq_data2:
+    driver: local
